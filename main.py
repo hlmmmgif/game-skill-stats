@@ -8,6 +8,7 @@
     python main.py --file skills.csv --digits 0           控制小数位
 """
 import argparse
+import logging
 
 from utils import (
     csv_average,
@@ -43,9 +44,9 @@ def run_checks():
     for name, got, exp in checks:
         ok = got == exp
         failed += 0 if ok else 1
-        print(f"{'OK  ' if ok else 'FAIL'} {name}: 得到 {got!r}")
+        logging.info(f"{'OK  ' if ok else 'FAIL'} {name}: 得到 {got!r}")
 
-    print(f"\n{len(checks) - failed}/{len(checks)} 通过")
+    logging.info(f"{len(checks) - failed}/{len(checks)} 通过")
     return failed
 
 
@@ -57,12 +58,20 @@ def build_parser():
     p.add_argument("--digits", type=int, default=1, help="保留小数位（默认：1）")
     p.add_argument("--top", type=int, default=0, help="输出前 N 名（默认 0 = 只看平均值）")
     p.add_argument("--check", action="store_true", help="跑一遍自测")
+    p.add_argument("--verbose", action="store_true", help="输出详细日志")
     return p
 
 
 def main():
     parser = build_parser()
     args = parser.parse_args()
+
+    logging.basicConfig(
+        level=logging.DEBUG if args.verbose else logging.INFO,
+        format="%(asctime)s [%(levelname)s] %(message)s",
+    )
+
+  
 
     # 模式一：自测
     if args.check:
@@ -72,46 +81,29 @@ def main():
     # 模式二：统计某个 CSV
     if args.file:
         try:
-            if args.top > 0:                                  # 排行榜模式
+            if args.top > 0: 
+                logging.debug(f"进入排行榜模式：file={args.file} column={args.column} top={args.top}")#排行榜模式
                 ranking = top_n(args.file, args.column, args.top)
 
-                # ── B2 的第二半 ────────────────────────────────
-                # 空 CSV、或者整列都是脏数据被跳过后，ranking 会是空列表 []。
-                # 现在的表现是打印一个空标题就结束，用户以为程序坏了。
-                #
-                #   空① ：if 后面填判断条件 —— "ranking 是空列表"怎么用布尔值表达？
-                #          （想清楚：你要的是"空的时候进这个分支"，不是"不空的时候"）
-                #   空② ：print 一句人话（可以参考 main.py 下面几个 except 里的提示写法）
-                #   空③ ：raise SystemExit(2)  —— 这一行不用改，直接抄下面 except 里的写法
                 if not ranking:
-                    print("错误，ranking为空列表，csv可能为空，或者整列都是脏数据")
+                    logging.error(f"没有可用数据：{args.file} 的{args.column}列里没有有效数值")
                     raise SystemExit(2)
 
-                print(f"{args.column} TOP {args.top}:")
+                logging.info(f"{args.column} TOP {args.top}:")
                 for i, (name, value) in enumerate(ranking, start=1):
-                    # ── B3 ────────────────────────────────────
-                    # 现在这行是：print(f"{i}. {name}\t{value}")
-                    # 问题：value 是 float，会打出 320.0，不管 --digits 传几都没用。
-                    #
-                    #   空④ ：要求打印出来是 "1. 陨石术    320"（--digits 0）
-                    #          也就是 1. 序号  2. 名字  3. \t 制表符  4. 数字（几位小数可调）
-                    #
-                    # 提示：形状是  f"{value:.___f}"
-                    #       小数点后的 ___ 位置，要再套一对大括号把 args.digits 塞进去，
-                    #       写成 .{args.digits}f 的意思就是"按 args.digits 位小数显示"
-                    # 注意：round() 做不到这件事，round(320.0, 0) 还是 320.0，去不掉 .0
-                    print(f"{i}. {name}\t{value:.{args.digits}f}")
-            else:                                             # 平均值模式（原有）
+                    logging.info(f"{i}. {name}\t{value:.{args.digits}f}")
+            else:
+                logging.debug(f"进入平均值模式：file={args.file} column={args.column} digits={args.digits}")
                 avg = csv_average(args.file, args.column)
-                print(f"{args.column} 平均值: {round(avg, args.digits)}")
+                logging.info(f"{args.column} 平均值: {round(avg, args.digits)}")
         except FileNotFoundError:
-            print(f"错误：找不到文件 {args.file}")
+            logging.error(f"错误：找不到文件 {args.file}")
             raise SystemExit(2)
         except KeyError:
-            print(f"错误：CSV 里没有名为 {args.column!r} 的列，请检查表头")
+            logging.error(f"错误：CSV 里没有名为 {args.column!r} 的列，请检查表头")
             raise SystemExit(2)
         except ValueError as e:
-            print(f"错误：这一列有非数字内容（{e}）")
+            logging.error(f"错误：这一列有非数字内容（{e}）")
             raise SystemExit(2)
 
         return
@@ -122,5 +114,4 @@ def main():
 
 if __name__ == "__main__":
     main()
-
 
