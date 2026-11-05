@@ -10,8 +10,6 @@
 import argparse
 import logging
 import utils
-
-
 def run_checks():
     """跑一遍全部自测，返回失败的条数（0 表示全通过）。"""
     checks = [
@@ -55,8 +53,6 @@ def build_parser():
 
 
 def main():
-    import utils_pandas
-    engines = {"csv":utils,"pandas":utils_pandas}
     parser = build_parser()
     args = parser.parse_args()
 
@@ -73,12 +69,17 @@ def main():
         raise SystemExit(1 if failed else 0)   # 退出码让外部程序也能判断成败
 
     # 模式二：统计某个 CSV
+    if args.engine == "pandas":
+        import utils_pandas
+        engine = utils_pandas
+    else:
+        import utils
+        engine = utils
     if args.file:
         try:
-            now_engine = engines[args.engine]
             if args.top > 0: 
                 logging.debug(f"进入排行榜模式：file={args.file} column={args.column} top={args.top}")#排行榜模式
-                ranking = now_engine.top_n(args.file, args.column, args.top)
+                ranking = engine.top_n(args.file, args.column, args.top)
 
                 if not ranking:
                     logging.error(f"没有可用数据：{args.file} 的{args.column}列里没有有效数值")
@@ -89,7 +90,7 @@ def main():
                     logging.info(f"{i}. {name}\t{value:.{args.digits}f}")
             else:
                 logging.debug(f"进入平均值模式：file={args.file} column={args.column} digits={args.digits}")
-                avg = now_engine.csv_average(args.file, args.column)
+                avg = engine.csv_average(args.file, args.column)
                 logging.info(f"{args.column} 平均值: {round(avg, args.digits)}")
         except FileNotFoundError:
             logging.error(f"错误：找不到文件 {args.file}")
@@ -100,9 +101,8 @@ def main():
         except ValueError as e:
             logging.error(f"错误：这一列有非数字内容（{e}）")
             raise SystemExit(2)
-
+    
         return
-
     # 模式三：什么都没给，打印帮助
     parser.print_help()
 
