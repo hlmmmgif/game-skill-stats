@@ -7,7 +7,7 @@
 import pandas as pd
 
 
-def csv_average_pandas(path, column):
+def csv_average(path, column):
     """
     读 CSV，返回 column 这一列数值的平均值。pandas 版。
     path   : CSV 文件路径，比如 "skills.csv"
@@ -24,7 +24,7 @@ def csv_average_pandas(path, column):
         return 0.0
     return ave
 
-def top_n_pandas(path, column, n):
+def top_n(path, column, n):
     """
     读 CSV，返回 column 列最大的前 n 条。
     返回格式必须和 utils.top_n 一模一样：[("技能名", 320.0), ...]，圆括号，数字是 float。

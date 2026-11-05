@@ -9,35 +9,26 @@
 """
 import argparse
 import logging
-
-from utils import (
-    csv_average,
-    top_n,
-    q1_average,
-    q2_word_freq,
-    q3_stats,
-    q4_robot_run,
-    q5_read_default,
-)
+import utils
 
 
 def run_checks():
     """跑一遍全部自测，返回失败的条数（0 表示全通过）。"""
     checks = [
-        ("Q1 平均值", q1_average([{"name": "甲", "score": "88"}, {"name": "乙", "score": "92"}]), 90.0),
-        ("Q1 空列表", q1_average([]), 0.0),
-        ("Q2 词频", q2_word_freq("a B a"), {"a": 2, "b": 1}),
-        ("Q2 大小写", q2_word_freq("Hello hello HELLO"), {"hello": 3}),
-        ("Q3 stats", q3_stats([1, 2, 3]), (1, 3, 2.0)),
-        ("Q3 digits", q3_stats([1, 2, 4], 0), (1, 4, 2.0)),
-        ("Q4 类", q4_robot_run("A", 2), "A 跑了 6 米"),
-        ("Q5 兜底", q5_read_default("不存在_xyz.txt", default="默认值"), "默认值"),
-        ("CSV 平均", round(csv_average("skills.csv", "伤害"), 2), 138.75),
-        ("TOP3", top_n("skills.csv", "伤害", 3)[0], ("陨石术", 320.0)),
-        ("TOP 脏数据", top_n("dirty.csv", "伤害", 2), [("甲", 120.0), ("丙", 80.0)]),
-        ("空文件", top_n("空.csv","伤害",2),[]),
-        ("越界",len(top_n("skills.csv","伤害",999)),8),
-        ("空文件 0 字节", top_n("真空.csv", "伤害", 2), []),
+        ("Q1 平均值",utils.q1_average([{"name": "甲", "score": "88"}, {"name": "乙", "score": "92"}]), 90.0),
+        ("Q1 空列表", utils.q1_average([]), 0.0),
+        ("Q2 词频", utils.q2_word_freq("a B a"), {"a": 2, "b": 1}),
+        ("Q2 大小写", utils.q2_word_freq("Hello hello HELLO"), {"hello": 3}),
+        ("Q3 stats", utils.q3_stats([1, 2, 3]), (1, 3, 2.0)),
+        ("Q3 digits", utils.q3_stats([1, 2, 4], 0), (1, 4, 2.0)),
+        ("Q4 类", utils.q4_robot_run("A", 2), "A 跑了 6 米"),
+        ("Q5 兜底", utils.q5_read_default("不存在_xyz.txt", default="默认值"), "默认值"),
+        ("CSV 平均", round(utils.csv_average("skills.csv", "伤害"), 2), 138.75),
+        ("TOP3", utils.top_n("skills.csv", "伤害", 3)[0], ("陨石术", 320.0)),
+        ("TOP 脏数据", utils.top_n("dirty.csv", "伤害", 2), [("甲", 120.0), ("丙", 80.0)]),
+        ("空文件", utils.top_n("空.csv","伤害",2),[]),
+        ("越界",len(utils.top_n("skills.csv","伤害",999)),8),
+        ("空文件 0 字节", utils.top_n("真空.csv", "伤害", 2), []),
     ]
 
     failed = 0
@@ -59,10 +50,13 @@ def build_parser():
     p.add_argument("--top", type=int, default=0, help="输出前 N 名（默认 0 = 只看平均值）")
     p.add_argument("--check", action="store_true", help="跑一遍自测")
     p.add_argument("--verbose", action="store_true", help="输出详细日志")
+    p.add_argument("--engine", choices=["csv","pandas"], default="csv", help="请选择计算引擎")
     return p
 
 
 def main():
+    import utils_pandas
+    engines = {"csv":utils,"pandas":utils_pandas}
     parser = build_parser()
     args = parser.parse_args()
 
@@ -81,9 +75,10 @@ def main():
     # 模式二：统计某个 CSV
     if args.file:
         try:
+            now_engine = engines[args.engine]
             if args.top > 0: 
                 logging.debug(f"进入排行榜模式：file={args.file} column={args.column} top={args.top}")#排行榜模式
-                ranking = top_n(args.file, args.column, args.top)
+                ranking = now_engine.top_n(args.file, args.column, args.top)
 
                 if not ranking:
                     logging.error(f"没有可用数据：{args.file} 的{args.column}列里没有有效数值")
@@ -94,7 +89,7 @@ def main():
                     logging.info(f"{i}. {name}\t{value:.{args.digits}f}")
             else:
                 logging.debug(f"进入平均值模式：file={args.file} column={args.column} digits={args.digits}")
-                avg = csv_average(args.file, args.column)
+                avg = now_engine.csv_average(args.file, args.column)
                 logging.info(f"{args.column} 平均值: {round(avg, args.digits)}")
         except FileNotFoundError:
             logging.error(f"错误：找不到文件 {args.file}")
