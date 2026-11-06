@@ -10,6 +10,11 @@
 import argparse
 import logging
 import utils
+try: 
+    import utils_pandas
+except ModuleNotFoundError:
+    utils_pandas = None
+    
 def run_checks():
     """跑一遍全部自测，返回失败的条数（0 表示全通过）。"""
     checks = [
@@ -22,13 +27,21 @@ def run_checks():
         ("Q4 类", utils.q4_robot_run("A", 2), "A 跑了 6 米"),
         ("Q5 兜底", utils.q5_read_default("不存在_xyz.txt", default="默认值"), "默认值"),
         ("CSV 平均", round(utils.csv_average("skills.csv", "伤害"), 2), 138.75),
-        ("TOP3", utils.top_n("skills.csv", "伤害", 3)[0], ("陨石术", 320.0)),
+        ("TOP3", utils.top_n("skills.csv", "伤害", 3), [("陨石术", 320.0),("雷暴突袭",210.0),("圣光审判",180.0)]),
         ("TOP 脏数据", utils.top_n("dirty.csv", "伤害", 2), [("甲", 120.0), ("丙", 80.0)]),
         ("空文件", utils.top_n("空.csv","伤害",2),[]),
         ("越界",len(utils.top_n("skills.csv","伤害",999)),8),
         ("空文件 0 字节", utils.top_n("真空.csv", "伤害", 2), []),
     ]
-
+    if utils_pandas is not None:
+        checks.append(("CSV 平均(pandas)", round(utils_pandas.csv_average("skills.csv", "伤害"), 2), 138.75),)
+        checks.append(("TOP3(pandas)", utils_pandas.top_n("skills.csv", "伤害", 3), [("陨石术", 320.0),("雷暴突袭",210.0),("圣光审判",180.0)])),
+        checks.append(("TOP 脏数据(pandas)", utils_pandas.top_n("dirty.csv", "伤害", 2), [("甲", 120.0), ("丙", 80.0)])),
+        checks.append(("空文件(pandas)", utils_pandas.top_n("空.csv","伤害",2),[])),
+        checks.append(("越界(pandas)",len(utils_pandas.top_n("skills.csv","伤害",999)),8)),
+        checks.append(("空文件 0 字节(pandas)", utils_pandas.top_n("真空.csv", "伤害", 2), [])),
+    else:
+        logging.info("pandas没有安装，跳过utils_pandas")
     failed = 0
     for name, got, exp in checks:
         ok = got == exp
