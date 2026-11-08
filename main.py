@@ -16,12 +16,12 @@ except ModuleNotFoundError:
     utils_pandas = None
 
 def check_production(module, suffix):
-    return [(f"CSV 平均{suffix}", round(module.csv_average("skills.csv", "伤害"), 2), 138.75),
-            (f"TOP3{suffix}", module.top_n("skills.csv", "伤害", 3), [("陨石术", 320.0),("雷暴突袭",210.0),("圣光审判",180.0)]),
-            (f"TOP 脏数据{suffix}", module.top_n("dirty.csv", "伤害", 2), [("甲", 120.0), ("丙", 80.0)]),
-            (f"空文件{suffix}", module.top_n("空.csv","伤害",2),[]),
-            (f"越界{suffix}",len(module.top_n("skills.csv","伤害",999)),8),
-            (f"空文件 0 字节{suffix}", module.top_n("真空.csv", "伤害", 2), [])] 
+    return [(f"CSV 平均 {suffix}", round(module.csv_average("skills.csv", "伤害"), 2), 138.75),
+            (f"TOP3 {suffix}", module.top_n("skills.csv", "伤害", 3), [("陨石术", 320.0),("雷暴突袭",210.0),("圣光审判",180.0)]),
+            (f"TOP 脏数据 {suffix}", module.top_n("dirty.csv", "伤害", 2), [("甲", 120.0), ("丙", 80.0)]),
+            (f"空文件 {suffix}", module.top_n("空.csv","伤害",2),[]),
+            (f"越界 {suffix}",len(module.top_n("skills.csv","伤害",999)),8),
+            (f"空文件 0 字节 {suffix}", module.top_n("真空.csv", "伤害", 2), [])] 
     
 def run_checks():
     """跑一遍全部自测，返回失败的条数（0 表示全通过）。"""
@@ -41,7 +41,7 @@ def run_checks():
         checks = checks + check_production(utils, "csv")
     else:
         checks = checks + check_production(utils, "csv")
-        checks = checks + check_production(utils_pandas, " pandas")
+        checks = checks + check_production(utils_pandas, "pandas")
     failed = 0
     for name, got, exp in checks:
         ok = got == exp
