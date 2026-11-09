@@ -7,6 +7,8 @@
     python main.py --file skills.csv --column 冷却秒       统计其他列
     python main.py --file skills.csv --digits 0           控制小数位
 """
+import subprocess
+import sys
 import argparse
 import logging
 import utils
@@ -34,6 +36,8 @@ def run_checks():
         ("Q3 digits", utils.q3_stats([1, 2, 4], 0), (1, 4, 2.0)),
         ("Q4 类", utils.q4_robot_run("A", 2), "A 跑了 6 米"),
         ("Q5 兜底", utils.q5_read_default("不存在_xyz.txt", default="默认值"), "默认值"),
+        ("不存在文件",subprocess.run([sys.executable,"main.py","--file","不存在的文件.txt"],capture_output=True).returncode, 2),
+        ("测试正常文件",subprocess.run([sys.executable,"main.py","--file","skills.csv"],capture_output=True).returncode, 0),
     ]
     
     if utils_pandas is None:
